@@ -555,6 +555,13 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 0.35rem;
 }
 
+.legal-block a {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.legal-block a:hover { text-decoration: underline; }
+
 .legal-block li::before {
     content: "◈";
     position: absolute;
