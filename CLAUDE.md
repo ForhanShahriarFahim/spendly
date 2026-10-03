@@ -95,8 +95,9 @@ pytest -s
 | `GET /` | Implemented — renders `landing.html` |
 | `GET /register` | Implemented — renders `register.html` |
 | `POST /register` | Implemented — validates, creates user, redirects to `/login?registered=1` |
-| `GET /login` | Implemented — renders `login.html` (shows success banner when `registered=1`) |
-| `GET /logout` | Stub — Step 3 |
+| `GET /login` | Implemented — renders `login.html` (shows success banner when `registered=1`); redirects to `/` if logged in |
+| `POST /login` | Implemented — verifies credentials, starts session (`user_id`), redirects to `/` |
+| `GET /logout` | Implemented — clears session, redirects to `/` |
 | `GET /profile` | Stub — Step 4 |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
@@ -115,4 +116,5 @@ pytest -s
 - **Never use JS frameworks** — the frontend is intentionally vanilla
 - **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist; the DB file is `expense_tracker.db` in the project root (gitignored), created and seeded on app startup. Do not assume any other DB helpers exist until the step that implements them
 - **FK enforcement is manual** — SQLite foreign keys are off by default; `get_db()` must run `PRAGMA foreign_keys = ON` on every connection
+- **Sessions** use `app.secret_key` from the `SECRET_KEY` env var (dev-only fallback in `app.py`); the session stores only `user_id`
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this
