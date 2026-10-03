@@ -94,7 +94,8 @@ pytest -s
 |---|---|
 | `GET /` | Implemented — renders `landing.html` |
 | `GET /register` | Implemented — renders `register.html` |
-| `GET /login` | Implemented — renders `login.html` |
+| `POST /register` | Implemented — validates, creates user, redirects to `/login?registered=1` |
+| `GET /login` | Implemented — renders `login.html` (shows success banner when `registered=1`) |
 | `GET /logout` | Stub — Step 3 |
 | `GET /profile` | Stub — Step 4 |
 | `GET /expenses/add` | Stub — Step 7 |

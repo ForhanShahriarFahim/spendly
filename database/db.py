@@ -46,6 +46,32 @@ def init_db():
         conn.close()
 
 
+def get_user_by_email(email):
+    """Exact-match lookup; the caller normalizes (trim + lower-case) the email."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def create_user(name, email, password):
+    """Insert a user with a hashed password. Raises sqlite3.IntegrityError
+    if the email is already registered."""
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, generate_password_hash(password)),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
 def _seed_dates(today):
     # Spread 8 dates from the 1st through today — never in the future.
     return [today.replace(day=1 + (i * (today.day - 1)) // 7).isoformat()
