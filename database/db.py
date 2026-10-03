@@ -57,6 +57,17 @@ def get_user_by_email(email):
         conn.close()
 
 
+def get_user_by_id(user_id):
+    """Return id, name and email (never the password hash) or None."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, name, email FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
 def create_user(name, email, password):
     """Insert a user with a hashed password. Raises sqlite3.IntegrityError
     if the email is already registered."""

@@ -1,16 +1,46 @@
+import os
 import sqlite3
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from werkzeug.security import check_password_hash
 
 from database.db import (
     create_user,
     get_db,
     get_user_by_email,
+    get_user_by_id,
     init_db,
     seed_db,
 )
 
 app = Flask(__name__)
+# Development-only fallback; set SECRET_KEY in the environment for real use.
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-insecure-key-change-me")
+
+
+def _current_user():
+    """Return the logged-in user row, or None. A session whose user no
+    longer exists is cleared. Not cached on g: the app context can outlive
+    a single request (e.g. under pytest-flask), which would serve stale data."""
+    user_id = session.get("user_id")
+    if user_id is None:
+        return None
+    user = get_user_by_id(user_id)
+    if user is None:
+        session.clear()
+    return user
+
+
+@app.context_processor
+def inject_current_user():
+    return {"current_user": _current_user()}
 
 
 # ------------------------------------------------------------------ #
@@ -30,6 +60,9 @@ def _render_register_error(message, name, email):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if _current_user():
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("register.html")
 
@@ -60,11 +93,41 @@ def register():
     return redirect(url_for("login", registered=1))
 
 
-@app.route("/login")
+def _render_login_error(message, email):
+    return render_template("login.html", error=message, email=email), 200
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template(
-        "login.html", registered=request.args.get("registered") == "1"
-    )
+    if _current_user():
+        return redirect(url_for("landing"))
+
+    if request.method == "GET":
+        return render_template(
+            "login.html", registered=request.args.get("registered") == "1"
+        )
+
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+
+    if not email:
+        return _render_login_error("Please enter your email address.", email)
+    if not password:
+        return _render_login_error("Please enter your password.", email)
+
+    user = get_user_by_email(email)
+    if user is None or not check_password_hash(user["password_hash"], password):
+        return _render_login_error("Invalid email or password.", email)
+
+    session.clear()
+    session["user_id"] = user["id"]
+    return redirect(url_for("landing"))
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("landing"))
 
 
 @app.route("/terms")
@@ -80,11 +143,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/logout")
-def logout():
-    return "Logout — coming in Step 3"
-
 
 @app.route("/profile")
 def profile():
