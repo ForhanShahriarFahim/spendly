@@ -13,5 +13,18 @@
       "Bash(git show *)",
       "Bash(git branch *)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$CLAUDE_ENV_FILE\" ] || exit 0; d=$(cygpath -u \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || printf %s \"$CLAUDE_PROJECT_DIR\"); printf 'export VIRTUAL_ENV=\"%s/venv\"\\nexport PATH=\"%s/venv/Scripts:%s/venv/bin:$PATH\"\\n' \"$d\" \"$d\" \"$d\" >> \"$CLAUDE_ENV_FILE\"",
+            "statusMessage": "Activating project venv"
+          }
+        ]
+      }
+    ]
   }
 }
