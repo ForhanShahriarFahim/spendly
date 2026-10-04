@@ -13,9 +13,13 @@ from werkzeug.security import check_password_hash
 
 from database.db import (
     create_user,
+    get_category_breakdown,
     get_db,
+    get_expense_summary,
+    get_recent_expenses,
     get_user_by_email,
     get_user_by_id,
+    get_user_profile,
     init_db,
     seed_db,
 )
@@ -61,7 +65,7 @@ def _render_register_error(message, name, email):
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if _current_user():
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template("register.html")
@@ -100,7 +104,7 @@ def _render_login_error(message, email):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if _current_user():
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template(
@@ -121,13 +125,35 @@ def login():
 
     session.clear()
     session["user_id"] = user["id"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("landing"))
+
+
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if user_id is None:
+        return redirect(url_for("login"))
+
+    user = get_user_profile(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    breakdown = get_category_breakdown(user_id)
+    return render_template(
+        "profile.html",
+        user=user,
+        summary=get_expense_summary(user_id),
+        breakdown=breakdown,
+        top_category=breakdown[0] if breakdown else None,
+        recent=get_recent_expenses(user_id),
+    )
 
 
 @app.route("/terms")
@@ -143,11 +169,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    return "Profile page — coming in Step 4"
-
 
 @app.route("/expenses/add")
 def add_expense():

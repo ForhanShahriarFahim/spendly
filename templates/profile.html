@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+
+    <header class="profile-header">
+        <div class="profile-avatar" aria-hidden="true">{{ user["name"][:1]|upper }}</div>
+        <div class="profile-identity">
+            <h1 class="profile-name">{{ user["name"] }}</h1>
+            <p class="profile-email">{{ user["email"] }}</p>
+            {% if user["created_at"] %}
+            <p class="profile-since">Member since {{ user["created_at"][:10] }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="profile-stats">
+        <div class="stat-card">
+            <span class="stat-label">Total spent</span>
+            <span class="stat-value">₹{{ "%.2f"|format(summary["total"]) }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Expenses</span>
+            <span class="stat-value">{{ summary["count"] }}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Top category</span>
+            <span class="stat-value stat-value--text"{% if top_category %} title="{{ top_category['category'] }}"{% endif %}>{{ top_category["category"] if top_category else "—" }}</span>
+        </div>
+    </div>
+
+    {% if summary["count"] == 0 %}
+    <div class="profile-empty">
+        <h2 class="profile-section-title">No expenses yet</h2>
+        <p>Once you start tracking, your spending will show up here.</p>
+    </div>
+    {% else %}
+
+    <section class="profile-section">
+        <h2 class="profile-section-title" id="recent-heading">Recent expenses</h2>
+        <div class="expense-table-wrap" tabindex="0" role="region" aria-labelledby="recent-heading">
+            <table class="expense-table">
+                <caption class="visually-hidden">Most recent expenses</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Category</th>
+                        <th scope="col" class="num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in recent %}
+                    <tr class="expense-row">
+                        <td>{{ e["date"] }}</td>
+                        <td>{{ e["description"] or "—" }}</td>
+                        <td><span class="category-pill">{{ e["category"] }}</span></td>
+                        <td class="num">₹{{ "%.2f"|format(e["amount"]) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="profile-section">
+        <h2 class="profile-section-title" id="category-heading">Spending by category</h2>
+        <ul class="category-list" aria-labelledby="category-heading">
+            {% for cat in breakdown %}
+            {% set pct = ((cat["total"] / summary["total"]) * 100)|round(1) if summary["total"] else 0 %}
+            <li class="category-row">
+                <div class="category-head">
+                    <span class="category-name">{{ cat["category"] }}</span>
+                    <span class="category-meta">
+                        ₹{{ "%.2f"|format(cat["total"]) }}
+                        · {{ cat["count"] }} expense{{ "" if cat["count"] == 1 else "s" }}
+                    </span>
+                </div>
+                <progress class="category-progress" value="{{ pct }}" max="100"
+                          aria-label="{{ cat['category'] }}: {{ pct }}% of total spending">{{ pct }}%</progress>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% endif %}
+</section>
+{% endblock %}
