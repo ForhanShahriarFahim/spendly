@@ -83,6 +83,60 @@ def create_user(name, email, password):
         conn.close()
 
 
+def get_user_profile(user_id):
+    """Return id, name, email and created_at (never the password hash) or None."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_expense_summary(user_id):
+    """Return {"total": float (2dp), "count": int}; zeros when no expenses."""
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count"
+            " FROM expenses WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        return {"total": round(row["total"], 2), "count": row["count"]}
+    finally:
+        conn.close()
+
+
+def get_category_breakdown(user_id):
+    """Rows of category, total and count, highest total first."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT category, SUM(amount) AS total, COUNT(*) AS count"
+            " FROM expenses WHERE user_id = ?"
+            " GROUP BY category ORDER BY total DESC, category ASC",
+            (user_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_recent_expenses(user_id, limit=10):
+    """Most recent expenses first (date, then id, descending)."""
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, amount, category, date, description"
+            " FROM expenses WHERE user_id = ?"
+            " ORDER BY date DESC, id DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+    finally:
+        conn.close()
+
+
 def _seed_dates(today):
     # Spread 8 dates from the 1st through today — never in the future.
     return [today.replace(day=1 + (i * (today.day - 1)) // 7).isoformat()

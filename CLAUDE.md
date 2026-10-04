@@ -18,7 +18,8 @@ spendly/
 ├── static/
 │   ├── css/
 │   │   ├── style.css       # Global styles
-│   │   └── landing.css     # Landing-page-only styles
+│   │   ├── landing.css     # Landing-page-only styles
+│   │   └── profile.css     # Profile-page-only styles
 │   └── js/
 │       └── main.js         # Vanilla JS only
 └── requirements.txt
@@ -98,7 +99,7 @@ pytest -s
 | `GET /login` | Implemented — renders `login.html` (shows success banner when `registered=1`); redirects to `/` if logged in |
 | `POST /login` | Implemented — verifies credentials, starts session (`user_id`), redirects to `/` |
 | `GET /logout` | Implemented — clears session, redirects to `/` |
-| `GET /profile` | Stub — Step 4 |
+| `GET /profile` | Implemented — renders `profile.html`; redirects to `/login` when logged out |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
@@ -114,7 +115,7 @@ pytest -s
 - **Never put DB logic in route functions** — it belongs in `database/db.py`
 - **Never install new packages** mid-feature without flagging it — keep `requirements.txt` in sync
 - **Never use JS frameworks** — the frontend is intentionally vanilla
-- **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist; the DB file is `expense_tracker.db` in the project root (gitignored), created and seeded on app startup. Do not assume any other DB helpers exist until the step that implements them
+- **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist, plus the user helpers and the read-only profile helpers (`get_user_profile()`, `get_expense_summary()`, `get_category_breakdown()`, `get_recent_expenses()`); the DB file is `expense_tracker.db` in the project root (gitignored), created and seeded on app startup. Do not assume any other DB helpers exist until the step that implements them
 - **FK enforcement is manual** — SQLite foreign keys are off by default; `get_db()` must run `PRAGMA foreign_keys = ON` on every connection
 - **Sessions** use `app.secret_key` from the `SECRET_KEY` env var (dev-only fallback in `app.py`); the session stores only `user_id`
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this

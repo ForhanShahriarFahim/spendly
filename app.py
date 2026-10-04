@@ -13,9 +13,13 @@ from werkzeug.security import check_password_hash
 
 from database.db import (
     create_user,
+    get_category_breakdown,
     get_db,
+    get_expense_summary,
+    get_recent_expenses,
     get_user_by_email,
     get_user_by_id,
+    get_user_profile,
     init_db,
     seed_db,
 )
@@ -130,6 +134,28 @@ def logout():
     return redirect(url_for("landing"))
 
 
+@app.route("/profile")
+def profile():
+    user_id = session.get("user_id")
+    if user_id is None:
+        return redirect(url_for("login"))
+
+    user = get_user_profile(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    breakdown = get_category_breakdown(user_id)
+    return render_template(
+        "profile.html",
+        user=user,
+        summary=get_expense_summary(user_id),
+        breakdown=breakdown,
+        top_category=breakdown[0] if breakdown else None,
+        recent=get_recent_expenses(user_id),
+    )
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -143,11 +169,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/profile")
-def profile():
-    return "Profile page — coming in Step 4"
-
 
 @app.route("/expenses/add")
 def add_expense():
