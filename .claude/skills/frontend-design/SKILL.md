@@ -137,8 +137,4 @@ Don't pepper the user with clarifying questions for things you can reasonably de
 
 **JS:** small module-free script to open/close the modal and reset the form on close.
 
-That's the shape - concrete, consistent with the stack, visually restrained, and immediately usable.
-
-
-
-
+That's the shape - concrete, consistent with the stack, visually restrained, and i

@@ -140,7 +140,7 @@ def test_profile_top_category(client):
     login(client)
     html = page(client)
     stats = html[html.index('class="profile-stats"'):html.index("Recent expenses")]
-    assert re.search(r'Top category</span>\s*<span class="stat-value">Bills<', stats)
+    assert re.search(r'Top category</span>\s*<span class="stat-value stat-value--text"[^>]*>Bills<', stats)
 
 
 def test_profile_progress_bars(client):
@@ -250,3 +250,68 @@ def test_new_files_have_no_inline_style_hex_or_hardcoded_urls():
     assert not re.search(r"#[0-9a-fA-F]{3,8}", template)
     assert 'href="/' not in template
     assert not re.search(r"#[0-9a-fA-F]{3,8}\b", css)
+
+
+# ------------------------------------------------------- design polish
+
+def test_avatar_shows_uppercase_initial(client):
+    new_user_login(client, name="alice smith", email="alice@example.com")
+    html = page(client)
+    assert re.search(r'class="profile-avatar"[^>]*>\s*A\s*</div>', html)
+
+
+def test_member_since_shows_created_date(client):
+    user_id = new_user_login(client)
+    created = get_user_profile(user_id)["created_at"][:10]
+    assert f"Member since {created}" in page(client)
+
+
+def test_expense_count_singular_and_plural(client):
+    user_id = new_user_login(client)
+    add_expense(user_id, 10, "Food", "2026-01-01", "a")
+    html = page(client)
+    assert "1 expense" in html and "1 expenses" not in html
+    add_expense(user_id, 10, "Food", "2026-01-02", "b")
+    assert "2 expenses" in page(client)
+
+
+def test_progress_value_matches_category_share(client):
+    user_id = new_user_login(client)
+    add_expense(user_id, 75, "Food", "2026-01-01", "a")
+    add_expense(user_id, 25, "Bills", "2026-01-02", "b")
+    html = page(client)
+    values = [float(v) for v in re.findall(r'<progress[^>]*value="([\d.]+)"', html)]
+    assert values == [75.0, 25.0]
+    assert html.count('max="100"') == 2
+    assert "style=" not in html
+
+
+def test_empty_state_has_no_table_or_breakdown(client):
+    new_user_login(client)
+    html = page(client)
+    assert "No expenses yet" in html
+    assert "<table" not in html and "category-progress" not in html
+    assert re.search(r'stat-value[^>]*>—<', html)
+
+
+def test_table_accessibility_markup(client):
+    user_id = new_user_login(client)
+    add_expense(user_id, 10, "Food", "2026-01-01", "a")
+    html = page(client)
+    assert "<caption" in html
+    assert html.count('scope="col"') == 4
+    assert re.search(r'class="expense-table-wrap"[^>]*tabindex="0"', html)
+
+
+def test_profile_css_design_rules():
+    css = (ROOT / "static" / "css" / "profile.css").read_text(encoding="utf-8")
+    for needle in ("::-webkit-progress-value", "::-moz-progress-bar",
+                   "tabular-nums", ":focus-visible"):
+        assert needle in css
+    assert ".category-bar" not in css
+
+
+def test_no_hardcoded_urls_in_profile_and_base_templates():
+    for name in ("profile.html", "base.html"):
+        text = (ROOT / "templates" / name).read_text(encoding="utf-8")
+        assert 'href="/' not in text and 'action="/' not in text

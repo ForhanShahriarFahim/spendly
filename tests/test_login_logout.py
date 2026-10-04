@@ -26,7 +26,7 @@ def test_registered_banner(client):
 def test_valid_login_redirects_and_sets_session(client):
     response = post_login(client)
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/")
+    assert response.headers["Location"].endswith("/profile")
     data = session_data(client)
     assert list(data) == ["user_id"]
 
@@ -75,7 +75,7 @@ def test_login_while_logged_in_redirects(client):
     post_login(client)
     for response in (client.get("/login"), post_login(client)):
         assert response.status_code == 302
-        assert response.headers["Location"].endswith("/")
+        assert response.headers["Location"].endswith("/profile")
 
 
 def test_stale_session_is_treated_as_logged_out(client):
@@ -127,4 +127,4 @@ def test_register_while_logged_in_redirects(client):
         "name": "X", "email": "x@example.com", "password": "password123"})
     for response in (get_response, post_response):
         assert response.status_code == 302
-        assert response.headers["Location"].endswith("/")
+        assert response.headers["Location"].endswith("/profile")

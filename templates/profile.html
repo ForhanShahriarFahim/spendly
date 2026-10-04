@@ -31,7 +31,7 @@
         </div>
         <div class="stat-card">
             <span class="stat-label">Top category</span>
-            <span class="stat-value">{{ top_category["category"] if top_category else "—" }}</span>
+            <span class="stat-value stat-value--text"{% if top_category %} title="{{ top_category['category'] }}"{% endif %}>{{ top_category["category"] if top_category else "—" }}</span>
         </div>
     </div>
 
@@ -43,15 +43,16 @@
     {% else %}
 
     <section class="profile-section">
-        <h2 class="profile-section-title">Recent expenses</h2>
-        <div class="expense-table-wrap">
+        <h2 class="profile-section-title" id="recent-heading">Recent expenses</h2>
+        <div class="expense-table-wrap" tabindex="0" role="region" aria-labelledby="recent-heading">
             <table class="expense-table">
+                <caption class="visually-hidden">Most recent expenses</caption>
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th class="num">Amount</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Category</th>
+                        <th scope="col" class="num">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,11 +70,11 @@
     </section>
 
     <section class="profile-section">
-        <h2 class="profile-section-title">Spending by category</h2>
-        <div class="category-list">
+        <h2 class="profile-section-title" id="category-heading">Spending by category</h2>
+        <ul class="category-list" aria-labelledby="category-heading">
             {% for cat in breakdown %}
             {% set pct = ((cat["total"] / summary["total"]) * 100)|round(1) if summary["total"] else 0 %}
-            <div class="category-row">
+            <li class="category-row">
                 <div class="category-head">
                     <span class="category-name">{{ cat["category"] }}</span>
                     <span class="category-meta">
@@ -83,9 +84,9 @@
                 </div>
                 <progress class="category-progress" value="{{ pct }}" max="100"
                           aria-label="{{ cat['category'] }}: {{ pct }}% of total spending">{{ pct }}%</progress>
-            </div>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
     </section>
 
     {% endif %}

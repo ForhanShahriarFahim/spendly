@@ -65,7 +65,7 @@ def _render_register_error(message, name, email):
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if _current_user():
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template("register.html")
@@ -104,7 +104,7 @@ def _render_login_error(message, email):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if _current_user():
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     if request.method == "GET":
         return render_template(
@@ -125,7 +125,7 @@ def login():
 
     session.clear()
     session["user_id"] = user["id"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/logout")
