@@ -2,6 +2,7 @@ import calendar
 import os
 import sqlite3
 from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from flask import (
     Flask,
@@ -14,6 +15,8 @@ from flask import (
 from werkzeug.security import check_password_hash
 
 from database.db import (
+    CATEGORIES,
+    create_expense,
     create_user,
     get_category_breakdown,
     get_db,
@@ -145,6 +148,64 @@ def _parse_iso_date(value):
         return None
 
 
+MAX_EXPENSE_AMOUNT = Decimal("9999999.99")
+MAX_DESCRIPTION_LENGTH = 200
+
+
+def _parse_amount(raw):
+    """Return `raw` as a positive 2dp float, or None if it is not a finite
+    number in (0, MAX_EXPENSE_AMOUNT]. A float is fine: the amount column is
+    REAL."""
+    try:
+        amount = Decimal(raw.strip())
+    except InvalidOperation:
+        return None
+    if not amount.is_finite() or amount <= 0 or amount > MAX_EXPENSE_AMOUNT:
+        return None
+    amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # A value like 0.001 rounds down to zero.
+    return float(amount) if amount > 0 else None
+
+
+def _validate_expense_form(form):
+    """Return (cleaned, error). `cleaned` holds amount, category, date and
+    description when valid; otherwise it is None and `error` explains why.
+    A blank description is left as "" (create_expense stores it as NULL)."""
+    amount = _parse_amount(form.get("amount", ""))
+    if amount is None:
+        return None, "Please enter an amount greater than zero."
+
+    category = form.get("category", "")
+    if category not in CATEGORIES:
+        return None, "Please choose a valid category."
+
+    date_str = _parse_iso_date(form.get("date", ""))
+    if date_str is None:
+        return None, "Please enter a valid date."
+
+    description = form.get("description", "").strip()
+    if len(description) > MAX_DESCRIPTION_LENGTH:
+        return None, (
+            f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer.")
+
+    return {
+        "amount": amount,
+        "category": category,
+        "date": date_str,
+        "description": description,
+    }, None
+
+
+def _render_add_expense(form, error=None):
+    return render_template(
+        "add_expense.html",
+        error=error,
+        form=form,
+        categories=CATEGORIES,
+        max_description_length=MAX_DESCRIPTION_LENGTH,
+    ), 200
+
+
 def _shift_months(day, months):
     """Move `day` by a number of months, clamping to the month's last day."""
     # Months since year 0 as a single integer, so divmod handles year rollover.
@@ -245,6 +306,28 @@ def analytics():
     return render_template("analytics.html")
 
 
+@app.route("/expenses/add", methods=["GET", "POST"])
+def add_expense():
+    if _current_user() is None:
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return _render_add_expense({"date": date.today().isoformat()})
+
+    cleaned, error = _validate_expense_form(request.form)
+    if error:
+        return _render_add_expense(request.form, error)
+
+    create_expense(
+        session["user_id"],
+        cleaned["amount"],
+        cleaned["category"],
+        cleaned["date"],
+        cleaned["description"],
+    )
+    return redirect(url_for("profile"))
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -258,11 +341,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/expenses/add")
-def add_expense():
-    return "Add expense — coming in Step 7"
-
 
 @app.route("/expenses/<int:id>/edit")
 def edit_expense(id):

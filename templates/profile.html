@@ -18,6 +18,7 @@
             <p class="profile-since">Member since {{ user["member_since"] }}</p>
             {% endif %}
         </div>
+        <a class="btn-primary profile-add-btn" href="{{ url_for('add_expense') }}">Add Expense</a>
     </header>
 
     <section class="filter-bar" aria-label="Filter by date">
@@ -62,7 +63,8 @@
     {% if not has_expenses %}
     <div class="profile-empty">
         <h2 class="profile-section-title">No expenses yet</h2>
-        <p>Once you start tracking, your spending will show up here.</p>
+        <p>Once you start tracking, your spending will show up here.
+            <a class="filter-empty-link" href="{{ url_for('add_expense') }}">Add your first expense</a>.</p>
     </div>
     {% elif summary["count"] == 0 %}
     <div class="profile-empty">

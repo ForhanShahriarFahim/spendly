@@ -181,6 +181,22 @@ def get_recent_expenses(user_id, limit=10, date_from=None, date_to=None):
         conn.close()
 
 
+def create_expense(user_id, amount, category, date, description):
+    """Insert an expense owned by `user_id` and return its id. A blank
+    description is stored as NULL."""
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount, category, date, description or None),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
 def _seed_dates(today):
     # Spread 8 dates from the 1st through today — never in the future.
     return [today.replace(day=1 + (i * (today.day - 1)) // 7).isoformat()

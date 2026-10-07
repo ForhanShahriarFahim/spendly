@@ -30,6 +30,8 @@
     margin-bottom: 2rem;
 }
 
+.profile-add-btn { margin-left: auto; }
+
 .profile-avatar {
     flex: none;
     width: 4.5rem;
