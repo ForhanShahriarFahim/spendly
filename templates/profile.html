@@ -14,8 +14,8 @@
         <div class="profile-identity">
             <h1 class="profile-name">{{ user["name"] }}</h1>
             <p class="profile-email">{{ user["email"] }}</p>
-            {% if user["created_at"] %}
-            <p class="profile-since">Member since {{ user["created_at"][:10] }}</p>
+            {% if user["member_since"] %}
+            <p class="profile-since">Member since {{ user["member_since"] }}</p>
             {% endif %}
         </div>
     </header>
@@ -73,7 +73,6 @@
         <h2 class="profile-section-title" id="category-heading">Spending by category</h2>
         <ul class="category-list" aria-labelledby="category-heading">
             {% for cat in breakdown %}
-            {% set pct = ((cat["total"] / summary["total"]) * 100)|round(1) if summary["total"] else 0 %}
             <li class="category-row">
                 <div class="category-head">
                     <span class="category-name">{{ cat["category"] }}</span>
@@ -82,8 +81,11 @@
                         · {{ cat["count"] }} expense{{ "" if cat["count"] == 1 else "s" }}
                     </span>
                 </div>
-                <progress class="category-progress" value="{{ pct }}" max="100"
-                          aria-label="{{ cat['category'] }}: {{ pct }}% of total spending">{{ pct }}%</progress>
+                <div class="category-share">
+                    <progress class="category-progress" value="{{ cat['pct'] }}" max="100"
+                              aria-label="{{ cat['category'] }}: {{ cat['pct'] }}% of total spending">{{ cat["pct"] }}%</progress>
+                    <span class="category-pct">{{ cat["pct"] }}%</span>
+                </div>
             </li>
             {% endfor %}
         </ul>
