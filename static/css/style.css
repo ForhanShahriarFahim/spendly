@@ -115,6 +115,11 @@ a { color: inherit; text-decoration: none; }
 
 .nav-user { color: var(--ink-soft); font-family: var(--font-body); }
 
+.nav-links a.active {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 /* ------------------------------------------------------------------ */
 /* Main                                                                */
 /* ------------------------------------------------------------------ */
@@ -631,7 +636,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 600px) {
-    .nav-links a:not(.nav-cta):not(.nav-signout):not(.nav-user) { display: none; }
+    .nav-links a:not(.nav-cta):not(.nav-signout):not(.nav-user):not(.nav-analytics) { display: none; }
     .nav-user {
         max-width: 8rem;
         overflow: hidden;

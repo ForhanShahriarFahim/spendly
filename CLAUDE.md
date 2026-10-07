@@ -100,6 +100,7 @@ pytest -s
 | `POST /login` | Implemented — verifies credentials, starts session (`user_id`), redirects to `/profile` |
 | `GET /logout` | Implemented — clears session, redirects to `/` |
 | `GET /profile` | Implemented — renders `profile.html`; redirects to `/login` when logged out; optional `date_from`/`date_to` (`YYYY-MM-DD`, inclusive) query params filter all sections |
+| `GET /analytics` | Implemented — renders `analytics.html` ("Coming Soon" page); redirects to `/login` when logged out; navbar link visible to logged-in users only, with active state |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |

@@ -238,6 +238,13 @@ def profile():
     )
 
 
+@app.route("/analytics")
+def analytics():
+    if _current_user() is None:
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
