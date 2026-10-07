@@ -302,7 +302,7 @@ def test_table_accessibility_markup(client):
     add_expense(user_id, 10, "Food", "2026-01-01", "a")
     html = page(client)
     assert "<caption" in html
-    assert html.count('scope="col"') == 4
+    assert html.count('scope="col"') == 5
     assert re.search(r'class="expense-table-wrap"[^>]*tabindex="0"', html)
 
 

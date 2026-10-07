@@ -6,6 +6,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from flask import (
     Flask,
+    abort,
     redirect,
     render_template,
     request,
@@ -20,6 +21,7 @@ from database.db import (
     create_user,
     get_category_breakdown,
     get_db,
+    get_expense,
     get_expense_summary,
     get_recent_expenses,
     get_user_by_email,
@@ -27,6 +29,7 @@ from database.db import (
     get_user_profile,
     init_db,
     seed_db,
+    update_expense,
 )
 
 app = Flask(__name__)
@@ -206,6 +209,17 @@ def _render_add_expense(form, error=None):
     ), 200
 
 
+def _render_edit_expense(expense_id, form, error=None):
+    return render_template(
+        "edit_expense.html",
+        error=error,
+        form=form,
+        expense_id=expense_id,
+        categories=CATEGORIES,
+        max_description_length=MAX_DESCRIPTION_LENGTH,
+    ), 200
+
+
 def _shift_months(day, months):
     """Move `day` by a number of months, clamping to the month's last day."""
     # Months since year 0 as a single integer, so divmod handles year rollover.
@@ -328,6 +342,38 @@ def add_expense():
     return redirect(url_for("profile"))
 
 
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
+def edit_expense(id):
+    if _current_user() is None:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    expense = get_expense(id, user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        form = dict(expense)
+        form["amount"] = f"{form['amount']:.2f}"
+        form["description"] = form["description"] or ""
+        return _render_edit_expense(id, form)
+
+    cleaned, error = _validate_expense_form(request.form)
+    if error:
+        return _render_edit_expense(id, request.form, error)
+
+    if not update_expense(
+        id,
+        user_id,
+        cleaned["amount"],
+        cleaned["category"],
+        cleaned["date"],
+        cleaned["description"],
+    ):
+        abort(404)
+    return redirect(url_for("profile"))
+
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -341,11 +387,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/expenses/<int:id>/edit")
-def edit_expense(id):
-    return "Edit expense — coming in Step 8"
-
 
 @app.route("/expenses/<int:id>/delete")
 def delete_expense(id):
