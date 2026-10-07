@@ -105,7 +105,8 @@ pytest -s
 | `POST /expenses/add` | Implemented — validates amount/category/date/description, inserts via `create_expense()`, redirects to `/profile`; re-renders form with inline error on invalid input |
 | `GET /expenses/<id>/edit` | Implemented — renders `edit_expense.html` pre-filled; redirects to `/login` when logged out; 404 for a missing or other user's expense |
 | `POST /expenses/<id>/edit` | Implemented — validates via `_validate_expense_form()`, updates via `update_expense()`, redirects to `/profile`; re-renders form with inline error on invalid input; 404 for a missing or other user's expense |
-| `GET /expenses/<id>/delete` | Stub — Step 9 |
+| `GET /expenses/<id>/delete` | Implemented — renders `delete_expense.html` confirmation page (never mutates); redirects to `/login` when logged out; 404 for a missing or other user's expense |
+| `POST /expenses/<id>/delete` | Implemented — deletes via `delete_expense()` (aliased `db_delete_expense` in `app.py`), redirects to `/profile`; redirects to `/login` when logged out; 404 for a missing or other user's expense |
 
 **Do not implement a stub route unless the active task explicitly targets that step.**
 
@@ -118,7 +119,7 @@ pytest -s
 - **Never put DB logic in route functions** — it belongs in `database/db.py`
 - **Never install new packages** mid-feature without flagging it — keep `requirements.txt` in sync
 - **Never use JS frameworks** — the frontend is intentionally vanilla
-- **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist, plus the user helpers, `create_expense()` and `update_expense()` (the expense write helpers), `get_expense()` (ownership-scoped single-expense read) and the read-only profile helpers (`get_user_profile()`, `get_expense_summary()`, `get_category_breakdown()`, `get_recent_expenses()`; the last three take optional `date_from`/`date_to` bounds via the private `_date_filter()`); the DB file is `expense_tracker.db` in the project root (gitignored), created and seeded on app startup. Do not assume any other DB helpers exist until the step that implements them
+- **`database/db.py` is implemented (Step 1)** — `get_db()`, `init_db()`, `seed_db()` exist, plus the user helpers, `create_expense()`, `update_expense()` and `delete_expense()` (the expense write helpers), `get_expense()` (ownership-scoped single-expense read) and the read-only profile helpers (`get_user_profile()`, `get_expense_summary()`, `get_category_breakdown()`, `get_recent_expenses()`; the last three take optional `date_from`/`date_to` bounds via the private `_date_filter()`); the DB file is `expense_tracker.db` in the project root (gitignored), created and seeded on app startup. Do not assume any other DB helpers exist until the step that implements them
 - **FK enforcement is manual** — SQLite foreign keys are off by default; `get_db()` must run `PRAGMA foreign_keys = ON` on every connection
 - **Sessions** use `app.secret_key` from the `SECRET_KEY` env var (dev-only fallback in `app.py`); the session stores only `user_id`
 - The app runs on **port 5001**, not the Flask default 5000 — don't change this

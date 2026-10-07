@@ -69,8 +69,9 @@ def edit_url(expense_id):
     return f"/expenses/{expense_id}/edit"
 
 
-def make_expense(user_id, amount=10.0, category="Bills", date="2026-02-01",
-                 description="Original"):
+def make_expense(
+    user_id, amount=10.0, category="Bills", date="2026-02-01", description="Original"
+):
     return create_expense(user_id, amount, category, date, description)
 
 
@@ -83,11 +84,17 @@ def owned(client):
 
 def snapshot(expense_id):
     row = fetch_row(expense_id)
-    return (row["amount"], row["category"], row["date"], row["description"],
-            row["user_id"])
+    return (
+        row["amount"],
+        row["category"],
+        row["date"],
+        row["description"],
+        row["user_id"],
+    )
 
 
 # ---------------------------------------------------------------- access
+
 
 def test_get_edit_logged_out_redirects_to_login(client):
     uid = create_user("U", "u@example.com", "password123")
@@ -109,6 +116,7 @@ def test_post_edit_logged_out_redirects_and_changes_nothing(client):
 
 # ---------------------------------------------------------------- profile link
 
+
 def test_profile_recent_rows_have_edit_link_each(client):
     uid = new_user_login(client)
     ids = [make_expense(uid, amount=i + 1) for i in range(3)]
@@ -123,15 +131,19 @@ def test_profile_demo_rows_link_to_edit(client):
     html = client.get("/profile").data.decode()
     conn = get_db()
     try:
-        ids = [r["id"] for r in conn.execute(
-            "SELECT id FROM expenses WHERE user_id = ?", (demo_id(),)
-        ).fetchall()]
+        ids = [
+            r["id"]
+            for r in conn.execute(
+                "SELECT id FROM expenses WHERE user_id = ?", (demo_id(),)
+            ).fetchall()
+        ]
     finally:
         conn.close()
     assert any(f'href="{edit_url(i)}"' in html for i in ids)
 
 
 # ---------------------------------------------------------------- prefill
+
 
 def test_get_edit_prefills_current_values(client):
     uid = new_user_login(client)
@@ -166,11 +178,15 @@ def test_cancel_link_returns_to_profile(owned, client):
 
 # ---------------------------------------------------------------- happy path
 
+
 def test_valid_post_redirects_to_profile_and_updates_row(owned, client):
     uid, eid = owned
-    response = client.post(edit_url(eid), data=valid_form(
-        amount="75.25", category="Health", date="2026-04-10",
-        description="Pharmacy"))
+    response = client.post(
+        edit_url(eid),
+        data=valid_form(
+            amount="75.25", category="Health", date="2026-04-10", description="Pharmacy"
+        ),
+    )
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/profile")
     row = fetch_row(eid)
@@ -183,8 +199,9 @@ def test_valid_post_redirects_to_profile_and_updates_row(owned, client):
 
 def test_updated_values_appear_on_profile(owned, client):
     _, eid = owned
-    client.post(edit_url(eid), data=valid_form(
-        amount="75.25", description="UniqueEditedNote"))
+    client.post(
+        edit_url(eid), data=valid_form(amount="75.25", description="UniqueEditedNote")
+    )
     html = client.get("/profile").data.decode()
     assert "UniqueEditedNote" in html
     assert "75.25" in html
@@ -228,6 +245,7 @@ def test_forged_user_id_form_field_ignored(owned, client):
 
 # ---------------------------------------------------------------- 404s
 
+
 def test_get_nonexistent_expense_returns_404(client):
     new_user_login(client)
     assert client.get(edit_url(999999)).status_code == 404
@@ -270,6 +288,7 @@ def test_foreign_and_missing_404_responses_match(client):
 
 
 # ---------------------------------------------------------------- validation
+
 
 @pytest.mark.parametrize(
     "amount",
@@ -352,9 +371,15 @@ def test_clearing_description_stores_null(owned, client, blank):
 
 def test_sticky_values_preserved_after_error(owned, client):
     _, eid = owned
-    response = client.post(edit_url(eid), data=valid_form(
-        amount="abc", category="Transport", date="2026-03-04",
-        description="Sticky note"))
+    response = client.post(
+        edit_url(eid),
+        data=valid_form(
+            amount="abc",
+            category="Transport",
+            date="2026-03-04",
+            description="Sticky note",
+        ),
+    )
     assert response.status_code == 200
     html = response.data.decode()
     assert "abc" in html
@@ -365,10 +390,10 @@ def test_sticky_values_preserved_after_error(owned, client):
 
 # ---------------------------------------------------------------- security
 
+
 def test_script_description_escaped_on_profile(owned, client):
     _, eid = owned
-    client.post(edit_url(eid), data=valid_form(
-        description="<script>alert(1)</script>"))
+    client.post(edit_url(eid), data=valid_form(description="<script>alert(1)</script>"))
     html = client.get("/profile").data.decode()
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;" in html
@@ -383,6 +408,7 @@ def test_sql_injection_description_stored_literally(owned, client):
 
 
 # ---------------------------------------------------------------- db helpers
+
 
 class TestGetExpense:
     def test_returns_row_for_owner(self):
@@ -453,11 +479,3 @@ class TestUpdateExpense:
         payload = "'; DROP TABLE expenses;--"
         update_expense(eid, uid, 5.0, "Food", "2026-06-06", payload)
         assert fetch_row(eid)["description"] == payload
-
-
-# ---------------------------------------------------------------- stubs
-
-def test_delete_stub_unchanged(client):
-    response = client.get("/expenses/1/delete")
-    assert response.status_code == 200
-    assert b"coming in Step 9" in response.data
