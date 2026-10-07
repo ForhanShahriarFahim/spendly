@@ -150,9 +150,24 @@
     font-variant-numeric: tabular-nums;
 }
 
+.category-share {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.category-pct {
+    min-width: 3ch;
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+}
+
 .category-progress {
     display: block;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     height: 8px;
     border: 0;
     border-radius: var(--radius-sm);

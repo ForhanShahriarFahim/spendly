@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from pathlib import Path
 
 from database.db import (
@@ -260,10 +261,11 @@ def test_avatar_shows_uppercase_initial(client):
     assert re.search(r'class="profile-avatar"[^>]*>\s*A\s*</div>', html)
 
 
-def test_member_since_shows_created_date(client):
+def test_member_since_shows_month_and_year(client):
     user_id = new_user_login(client)
     created = get_user_profile(user_id)["created_at"][:10]
-    assert f"Member since {created}" in page(client)
+    expected = datetime.strptime(created, "%Y-%m-%d").strftime("%B %Y")
+    assert f"Member since {expected}" in page(client)
 
 
 def test_expense_count_singular_and_plural(client):
@@ -281,7 +283,8 @@ def test_progress_value_matches_category_share(client):
     add_expense(user_id, 25, "Bills", "2026-01-02", "b")
     html = page(client)
     values = [float(v) for v in re.findall(r'<progress[^>]*value="([\d.]+)"', html)]
-    assert values == [75.0, 25.0]
+    assert values == [75, 25]
+    assert 'category-pct">75%<' in html and 'category-pct">25%<' in html
     assert html.count('max="100"') == 2
     assert "style=" not in html
 

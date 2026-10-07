@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 
 from werkzeug.security import generate_password_hash
 
@@ -84,15 +84,28 @@ def create_user(name, email, password):
 
 
 def get_user_profile(user_id):
-    """Return id, name, email and created_at (never the password hash) or None."""
+    """Return a dict of id, name, email, created_at and member_since
+    ("Month YYYY"), never the password hash; None if the user is missing."""
     conn = get_db()
     try:
-        return conn.execute(
+        row = conn.execute(
             "SELECT id, name, email, created_at FROM users WHERE id = ?",
             (user_id,),
         ).fetchone()
     finally:
         conn.close()
+    if row is None:
+        return None
+    profile = dict(row)
+    profile["member_since"] = _format_member_since(profile["created_at"])
+    return profile
+
+
+def _format_member_since(created_at):
+    try:
+        return datetime.strptime(created_at[:10], "%Y-%m-%d").strftime("%B %Y")
+    except (TypeError, ValueError):
+        return ""
 
 
 def get_expense_summary(user_id):
@@ -110,10 +123,11 @@ def get_expense_summary(user_id):
 
 
 def get_category_breakdown(user_id):
-    """Rows of category, total and count, highest total first."""
+    """Dicts of category, total, count and pct (integer share of spending,
+    summing to 100), highest total first."""
     conn = get_db()
     try:
-        return conn.execute(
+        rows = conn.execute(
             "SELECT category, SUM(amount) AS total, COUNT(*) AS count"
             " FROM expenses WHERE user_id = ?"
             " GROUP BY category ORDER BY total DESC, category ASC",
@@ -121,6 +135,18 @@ def get_category_breakdown(user_id):
         ).fetchall()
     finally:
         conn.close()
+    return _assign_percentages(rows, sum(row["total"] for row in rows))
+
+
+def _assign_percentages(rows, total):
+    """Integer percentages (half-up) that sum to exactly 100; the first
+    (largest) row absorbs any rounding remainder. All 0 when total <= 0."""
+    result = [dict(row) for row in rows]
+    for item in result:
+        item["pct"] = int(item["total"] * 100 / total + 0.5) if total > 0 else 0
+    if result and total > 0:
+        result[0]["pct"] += 100 - sum(item["pct"] for item in result)
+    return result
 
 
 def get_recent_expenses(user_id, limit=10):
