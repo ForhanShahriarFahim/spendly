@@ -108,30 +108,46 @@ def _format_member_since(created_at):
         return ""
 
 
-def get_expense_summary(user_id):
-    """Return {"total": float (2dp), "count": int}; zeros when no expenses."""
+def _date_filter(date_from, date_to):
+    """Return (sql_fragment, params) bounding expenses.date inclusively.
+    Only fixed fragments are built here; values are always bound via `?`."""
+    sql, params = "", []
+    if date_from:
+        sql += " AND date >= ?"
+        params.append(date_from)
+    if date_to:
+        sql += " AND date <= ?"
+        params.append(date_to)
+    return sql, tuple(params)
+
+
+def get_expense_summary(user_id, date_from=None, date_to=None):
+    """Return {"total": float (2dp), "count": int}; zeros when no expenses.
+    Optional ISO date bounds (inclusive) restrict the expenses counted."""
+    filter_sql, filter_params = _date_filter(date_from, date_to)
     conn = get_db()
     try:
         row = conn.execute(
             "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count"
-            " FROM expenses WHERE user_id = ?",
-            (user_id,),
+            " FROM expenses WHERE user_id = ?" + filter_sql,
+            (user_id, *filter_params),
         ).fetchone()
         return {"total": round(row["total"], 2), "count": row["count"]}
     finally:
         conn.close()
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, date_from=None, date_to=None):
     """Dicts of category, total, count and pct (integer share of spending,
-    summing to 100), highest total first."""
+    summing to 100), highest total first. Optional inclusive ISO date bounds."""
+    filter_sql, filter_params = _date_filter(date_from, date_to)
     conn = get_db()
     try:
         rows = conn.execute(
             "SELECT category, SUM(amount) AS total, COUNT(*) AS count"
-            " FROM expenses WHERE user_id = ?"
+            " FROM expenses WHERE user_id = ?" + filter_sql +
             " GROUP BY category ORDER BY total DESC, category ASC",
-            (user_id,),
+            (user_id, *filter_params),
         ).fetchall()
     finally:
         conn.close()
@@ -149,15 +165,17 @@ def _assign_percentages(rows, total):
     return result
 
 
-def get_recent_expenses(user_id, limit=10):
-    """Most recent expenses first (date, then id, descending)."""
+def get_recent_expenses(user_id, limit=10, date_from=None, date_to=None):
+    """Most recent expenses first (date, then id, descending). Optional
+    inclusive ISO date bounds."""
+    filter_sql, filter_params = _date_filter(date_from, date_to)
     conn = get_db()
     try:
         return conn.execute(
             "SELECT id, amount, category, date, description"
-            " FROM expenses WHERE user_id = ?"
+            " FROM expenses WHERE user_id = ?" + filter_sql +
             " ORDER BY date DESC, id DESC LIMIT ?",
-            (user_id, limit),
+            (user_id, *filter_params, limit),
         ).fetchall()
     finally:
         conn.close()
