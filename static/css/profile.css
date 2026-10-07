@@ -244,6 +244,90 @@
     font-size: 0.8125rem;
 }
 
+.filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--profile-shadow);
+}
+
+.filter-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-preset {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.filter-preset:hover { background: var(--paper-warm); }
+
+.filter-preset.is-active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+}
+
+.filter-input {
+    /* Override the full-width global .form-input so fields sit inline. */
+    width: auto;
+    min-width: 10rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+.filter-form.is-active .filter-input { border-color: var(--accent); }
+
+.filter-apply {
+    /* Override the full-width global button so it sits inline. */
+    width: auto;
+    padding: 0.55rem 1.25rem;
+    border: 0;
+    cursor: pointer;
+}
+
+.filter-error {
+    margin: 0;
+    padding: 0.6rem 0.9rem;
+    background: var(--danger-light);
+    border-radius: var(--radius-sm);
+    color: var(--danger);
+    font-size: 0.875rem;
+}
+
+.filter-empty-link { color: var(--accent); }
+
 @media (max-width: 900px) {
     .profile-stats { grid-template-columns: repeat(2, 1fr); }
 }
@@ -251,6 +335,10 @@
 @media (max-width: 600px) {
     .profile-page { padding: 1.5rem 1rem 3rem; }
     .profile-stats { grid-template-columns: 1fr; }
+    .filter-presets { display: grid; grid-template-columns: 1fr 1fr; }
+    .filter-preset { text-align: center; }
+    .filter-form { flex-direction: column; align-items: stretch; }
+    .filter-input { width: 100%; }
     .profile-name { font-size: 1.5rem; }
     .category-list { padding: 1rem; }
     .category-head { flex-wrap: wrap; }

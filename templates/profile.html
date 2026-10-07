@@ -20,6 +20,30 @@
         </div>
     </header>
 
+    <section class="filter-bar" aria-label="Filter by date">
+        <div class="filter-presets">
+            {% for preset in presets %}
+            <a class="filter-preset{% if preset['active'] %} is-active{% endif %}"
+               href="{{ url_for('profile', date_from=preset['date_from'], date_to=preset['date_to']) }}"
+               {% if preset['active'] %}aria-current="true"{% endif %}>{{ preset["label"] }}</a>
+            {% endfor %}
+        </div>
+        <form class="filter-form{% if custom_active %} is-active{% endif %}" method="get" action="{{ url_for('profile') }}">
+            <div class="filter-field">
+                <label for="date_from">From</label>
+                <input class="filter-input" type="date" id="date_from" name="date_from" value="{{ date_from or '' }}">
+            </div>
+            <div class="filter-field">
+                <label for="date_to">To</label>
+                <input class="filter-input" type="date" id="date_to" name="date_to" value="{{ date_to or '' }}">
+            </div>
+            <button class="btn-primary filter-apply" type="submit">Apply</button>
+        </form>
+        {% if filter_error %}
+        <p class="filter-error" role="alert">{{ filter_error }}</p>
+        {% endif %}
+    </section>
+
     <div class="profile-stats">
         <div class="stat-card">
             <span class="stat-label">Total spent</span>
@@ -35,10 +59,15 @@
         </div>
     </div>
 
-    {% if summary["count"] == 0 %}
+    {% if not has_expenses %}
     <div class="profile-empty">
         <h2 class="profile-section-title">No expenses yet</h2>
         <p>Once you start tracking, your spending will show up here.</p>
+    </div>
+    {% elif summary["count"] == 0 %}
+    <div class="profile-empty">
+        <h2 class="profile-section-title">No expenses in this date range</h2>
+        <p>Try a different range or <a class="filter-empty-link" href="{{ url_for('profile') }}">clear the filter</a>.</p>
     </div>
     {% else %}
 

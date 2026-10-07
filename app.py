@@ -1,5 +1,7 @@
+import calendar
 import os
 import sqlite3
+from datetime import date, datetime
 
 from flask import (
     Flask,
@@ -134,6 +136,70 @@ def logout():
     return redirect(url_for("landing"))
 
 
+def _parse_iso_date(value):
+    """Return `value` as a normalised YYYY-MM-DD string, or None if it is
+    missing or malformed (a bad value is treated as absent)."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date().isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
+def _shift_months(day, months):
+    """Move `day` by a number of months, clamping to the month's last day."""
+    # Months since year 0 as a single integer, so divmod handles year rollover.
+    index = day.year * 12 + (day.month - 1) + months
+    year, month = divmod(index, 12)
+    month += 1
+    last_day = calendar.monthrange(year, month)[1]
+    return day.replace(year=year, month=month, day=min(day.day, last_day))
+
+
+def _filter_presets(today):
+    """Quick-select date ranges as dicts of label, date_from and date_to."""
+    today_iso = today.isoformat()
+    return [
+        {"label": "This Month",
+         "date_from": today.replace(day=1).isoformat(),
+         "date_to": today_iso},
+        {"label": "Last 3 Months",
+         "date_from": _shift_months(today, -3).isoformat(),
+         "date_to": today_iso},
+        {"label": "Last 6 Months",
+         "date_from": _shift_months(today, -6).isoformat(),
+         "date_to": today_iso},
+        {"label": "All Time", "date_from": None, "date_to": None},
+    ]
+
+
+def _resolve_date_filter(args, today):
+    """Validate date_from/date_to from the query string. Returns a dict with
+    date_from, date_to, error, presets (each flagged `active`) and
+    custom_active. A malformed value is ignored; a reversed range is dropped
+    with an error message."""
+    date_from = _parse_iso_date(args.get("date_from"))
+    date_to = _parse_iso_date(args.get("date_to"))
+    error = None
+    if date_from and date_to and date_from > date_to:
+        date_from = date_to = None
+        error = "Start date must be before end date."
+
+    presets = _filter_presets(today)
+    for preset in presets:
+        preset["active"] = (
+            preset["date_from"] == date_from and preset["date_to"] == date_to
+        )
+    custom_active = bool(date_from or date_to) and not any(
+        p["active"] for p in presets)
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "error": error,
+        "presets": presets,
+        "custom_active": custom_active,
+    }
+
+
 @app.route("/profile")
 def profile():
     user_id = session.get("user_id")
@@ -145,14 +211,30 @@ def profile():
         session.clear()
         return redirect(url_for("login"))
 
-    breakdown = get_category_breakdown(user_id)
+    date_filter = _resolve_date_filter(request.args, date.today())
+    date_from = date_filter["date_from"]
+    date_to = date_filter["date_to"]
+
+    summary = get_expense_summary(user_id, date_from, date_to)
+    breakdown = get_category_breakdown(user_id, date_from, date_to)
+    has_expenses = summary["count"] > 0
+    if not has_expenses and (date_from or date_to):
+        # An empty filtered range: tell "no expenses at all" from "none here".
+        has_expenses = get_expense_summary(user_id)["count"] > 0
     return render_template(
         "profile.html",
         user=user,
-        summary=get_expense_summary(user_id),
+        summary=summary,
         breakdown=breakdown,
         top_category=breakdown[0] if breakdown else None,
-        recent=get_recent_expenses(user_id),
+        recent=get_recent_expenses(
+            user_id, date_from=date_from, date_to=date_to),
+        date_from=date_from,
+        date_to=date_to,
+        has_expenses=has_expenses,
+        filter_error=date_filter["error"],
+        presets=date_filter["presets"],
+        custom_active=date_filter["custom_active"],
     )
 
 
