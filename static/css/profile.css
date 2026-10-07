@@ -348,3 +348,18 @@
     .expense-table th,
     .expense-table td { padding: 0.75rem 1rem; }
 }
+
+.expense-table .actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.expense-edit-link {
+    color: var(--accent);
+    font-size: 0.875rem;
+}
+
+.expense-edit-link:hover,
+.expense-edit-link:focus-visible {
+    text-decoration: underline;
+}

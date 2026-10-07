@@ -328,12 +328,6 @@ def test_create_expense_helper_blank_description_is_null(client):
 
 # ---------------------------------------------------------------- stubs
 
-def test_edit_stub_unchanged(client):
-    response = client.get("/expenses/1/edit")
-    assert response.status_code == 200
-    assert b"coming in Step 8" in response.data
-
-
 def test_delete_stub_unchanged(client):
     response = client.get("/expenses/1/delete")
     assert response.status_code == 200
