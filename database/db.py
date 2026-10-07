@@ -9,8 +9,15 @@ DB_PATH = os.path.join(
     "expense_tracker.db",
 )
 
-CATEGORIES = ("Food", "Transport", "Bills", "Health",
-              "Entertainment", "Shopping", "Other")
+CATEGORIES = (
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+)
 
 
 def get_db():
@@ -50,9 +57,7 @@ def get_user_by_email(email):
     """Exact-match lookup; the caller normalizes (trim + lower-case) the email."""
     conn = get_db()
     try:
-        return conn.execute(
-            "SELECT * FROM users WHERE email = ?", (email,)
-        ).fetchone()
+        return conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     finally:
         conn.close()
 
@@ -145,8 +150,9 @@ def get_category_breakdown(user_id, date_from=None, date_to=None):
     try:
         rows = conn.execute(
             "SELECT category, SUM(amount) AS total, COUNT(*) AS count"
-            " FROM expenses WHERE user_id = ?" + filter_sql +
-            " GROUP BY category ORDER BY total DESC, category ASC",
+            " FROM expenses WHERE user_id = ?"
+            + filter_sql
+            + " GROUP BY category ORDER BY total DESC, category ASC",
             (user_id, *filter_params),
         ).fetchall()
     finally:
@@ -173,8 +179,9 @@ def get_recent_expenses(user_id, limit=10, date_from=None, date_to=None):
     try:
         return conn.execute(
             "SELECT id, amount, category, date, description"
-            " FROM expenses WHERE user_id = ?" + filter_sql +
-            " ORDER BY date DESC, id DESC LIMIT ?",
+            " FROM expenses WHERE user_id = ?"
+            + filter_sql
+            + " ORDER BY date DESC, id DESC LIMIT ?",
             (user_id, *filter_params, limit),
         ).fetchall()
     finally:
@@ -228,10 +235,26 @@ def update_expense(expense_id, user_id, amount, category, date, description):
         conn.close()
 
 
+def delete_expense(expense_id, user_id):
+    """Delete an expense owned by `user_id`. Returns True if a row was
+    removed, False if it does not exist or belongs to someone else."""
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
 def _seed_dates(today):
     # Spread 8 dates from the 1st through today — never in the future.
-    return [today.replace(day=1 + (i * (today.day - 1)) // 7).isoformat()
-            for i in range(8)]
+    return [
+        today.replace(day=1 + (i * (today.day - 1)) // 7).isoformat() for i in range(8)
+    ]
 
 
 def seed_db():
@@ -258,8 +281,10 @@ def seed_db():
         conn.executemany(
             "INSERT INTO expenses (user_id, amount, category, date, description)"
             " VALUES (?, ?, ?, ?, ?)",
-            [(user_id, amount, category, day, description)
-             for (amount, category, description), day in zip(samples, dates)],
+            [
+                (user_id, amount, category, day, description)
+                for (amount, category, description), day in zip(samples, dates)
+            ],
         )
         conn.commit()
     finally:

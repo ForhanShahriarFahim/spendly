@@ -19,6 +19,7 @@ from database.db import (
     CATEGORIES,
     create_expense,
     create_user,
+    delete_expense as db_delete_expense,
     get_category_breakdown,
     get_db,
     get_expense,
@@ -59,15 +60,14 @@ def inject_current_user():
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
+
 @app.route("/")
 def landing():
     return render_template("landing.html")
 
 
 def _render_register_error(message, name, email):
-    return render_template(
-        "register.html", error=message, name=name, email=email
-    ), 200
+    return render_template("register.html", error=message, name=name, email=email), 200
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -85,14 +85,15 @@ def register():
     if not name:
         return _render_register_error("Please enter your full name.", name, email)
     if not email:
-        return _render_register_error(
-            "Please enter your email address.", name, email)
+        return _render_register_error("Please enter your email address.", name, email)
     if "@" not in email:
         return _render_register_error(
-            "Please enter a valid email address.", name, email)
+            "Please enter a valid email address.", name, email
+        )
     if len(password) < 8:
         return _render_register_error(
-            "Password must be at least 8 characters.", name, email)
+            "Password must be at least 8 characters.", name, email
+        )
     duplicate_error = "An account with this email already exists."
     if get_user_by_email(email):
         return _render_register_error(duplicate_error, name, email)
@@ -189,7 +190,8 @@ def _validate_expense_form(form):
     description = form.get("description", "").strip()
     if len(description) > MAX_DESCRIPTION_LENGTH:
         return None, (
-            f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer.")
+            f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer."
+        )
 
     return {
         "amount": amount,
@@ -200,24 +202,30 @@ def _validate_expense_form(form):
 
 
 def _render_add_expense(form, error=None):
-    return render_template(
-        "add_expense.html",
-        error=error,
-        form=form,
-        categories=CATEGORIES,
-        max_description_length=MAX_DESCRIPTION_LENGTH,
-    ), 200
+    return (
+        render_template(
+            "add_expense.html",
+            error=error,
+            form=form,
+            categories=CATEGORIES,
+            max_description_length=MAX_DESCRIPTION_LENGTH,
+        ),
+        200,
+    )
 
 
 def _render_edit_expense(expense_id, form, error=None):
-    return render_template(
-        "edit_expense.html",
-        error=error,
-        form=form,
-        expense_id=expense_id,
-        categories=CATEGORIES,
-        max_description_length=MAX_DESCRIPTION_LENGTH,
-    ), 200
+    return (
+        render_template(
+            "edit_expense.html",
+            error=error,
+            form=form,
+            expense_id=expense_id,
+            categories=CATEGORIES,
+            max_description_length=MAX_DESCRIPTION_LENGTH,
+        ),
+        200,
+    )
 
 
 def _shift_months(day, months):
@@ -234,15 +242,21 @@ def _filter_presets(today):
     """Quick-select date ranges as dicts of label, date_from and date_to."""
     today_iso = today.isoformat()
     return [
-        {"label": "This Month",
-         "date_from": today.replace(day=1).isoformat(),
-         "date_to": today_iso},
-        {"label": "Last 3 Months",
-         "date_from": _shift_months(today, -3).isoformat(),
-         "date_to": today_iso},
-        {"label": "Last 6 Months",
-         "date_from": _shift_months(today, -6).isoformat(),
-         "date_to": today_iso},
+        {
+            "label": "This Month",
+            "date_from": today.replace(day=1).isoformat(),
+            "date_to": today_iso,
+        },
+        {
+            "label": "Last 3 Months",
+            "date_from": _shift_months(today, -3).isoformat(),
+            "date_to": today_iso,
+        },
+        {
+            "label": "Last 6 Months",
+            "date_from": _shift_months(today, -6).isoformat(),
+            "date_to": today_iso,
+        },
         {"label": "All Time", "date_from": None, "date_to": None},
     ]
 
@@ -264,8 +278,7 @@ def _resolve_date_filter(args, today):
         preset["active"] = (
             preset["date_from"] == date_from and preset["date_to"] == date_to
         )
-    custom_active = bool(date_from or date_to) and not any(
-        p["active"] for p in presets)
+    custom_active = bool(date_from or date_to) and not any(p["active"] for p in presets)
     return {
         "date_from": date_from,
         "date_to": date_to,
@@ -302,8 +315,7 @@ def profile():
         summary=summary,
         breakdown=breakdown,
         top_category=breakdown[0] if breakdown else None,
-        recent=get_recent_expenses(
-            user_id, date_from=date_from, date_to=date_to),
+        recent=get_recent_expenses(user_id, date_from=date_from, date_to=date_to),
         date_from=date_from,
         date_to=date_to,
         has_expenses=has_expenses,
@@ -384,13 +396,22 @@ def privacy():
     return render_template("privacy.html")
 
 
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
-
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["GET", "POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    if _current_user() is None:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    expense = get_expense(id, user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template("delete_expense.html", expense=expense)
+
+    if not db_delete_expense(id, user_id):
+        abort(404)
+    return redirect(url_for("profile"))
 
 
 with app.app_context():

@@ -363,3 +363,49 @@
 .expense-edit-link:focus-visible {
     text-decoration: underline;
 }
+
+.expense-delete-link {
+    color: var(--danger);
+    font-size: 0.875rem;
+    margin-left: 0.75rem;
+}
+
+.expense-delete-link:hover,
+.expense-delete-link:focus-visible {
+    text-decoration: underline;
+}
+
+.delete-summary {
+    margin: 0 0 1rem;
+}
+
+.delete-summary dt {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+}
+
+.delete-summary dd {
+    margin: 0 0 0.75rem;
+    color: var(--ink);
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 0.7rem;
+    background: var(--danger);
+    color: var(--paper);
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-danger:hover,
+.btn-danger:focus-visible {
+    background: var(--danger-light);
+    color: var(--danger);
+}

@@ -63,6 +63,7 @@ def valid_form(**overrides):
 
 # ---------------------------------------------------------------- access
 
+
 def test_get_add_expense_logged_out_redirects_to_login(client):
     response = client.get(URL)
     assert response.status_code == 302
@@ -78,6 +79,7 @@ def test_post_add_expense_logged_out_redirects_and_inserts_nothing(client):
 
 
 # ---------------------------------------------------------------- form render
+
 
 def test_get_form_renders_categories_date_and_cancel(client):
     login(client)
@@ -100,6 +102,7 @@ def test_profile_has_add_expense_link(client):
 
 
 # ---------------------------------------------------------------- happy path
+
 
 def test_valid_post_redirects_to_profile_and_inserts_row(client):
     user_id = new_user_login(client)
@@ -147,6 +150,7 @@ def test_forged_user_id_form_field_ignored(client):
 
 # ---------------------------------------------------------------- amount
 
+
 @pytest.mark.parametrize(
     "amount",
     ["", "abc", "0", "-5", "nan", "inf", "-inf", "1e999", "99999999999"],
@@ -182,6 +186,7 @@ def test_whitespace_trimmed_amount_accepted(client):
 
 # ---------------------------------------------------------------- category
 
+
 @pytest.mark.parametrize("category", ["Gambling", "", "food", "<b>x</b>"])
 def test_tampered_category_rejected(client, category):
     uid = new_user_login(client)
@@ -201,6 +206,7 @@ def test_missing_category_rejected(client):
 
 
 # ---------------------------------------------------------------- date
+
 
 @pytest.mark.parametrize(
     "bad_date", ["", "not-a-date", "2026-13-01", "2026-02-30", "15/01/2026"]
@@ -231,6 +237,7 @@ def test_future_date_accepted(client):
 
 
 # ---------------------------------------------------------------- description
+
 
 def test_description_200_chars_accepted(client):
     uid = new_user_login(client)
@@ -273,12 +280,15 @@ def test_sql_injection_description_stored_literally(client):
 
 # ---------------------------------------------------------------- sticky values
 
+
 def test_sticky_values_preserved_after_error(client):
     new_user_login(client)
     response = client.post(
         URL,
         data=valid_form(
-            amount="abc", category="Transport", date="2026-03-04",
+            amount="abc",
+            category="Transport",
+            date="2026-03-04",
             description="Sticky note",
         ),
     )
@@ -293,6 +303,7 @@ def test_sticky_values_preserved_after_error(client):
 
 # ---------------------------------------------------------------- helper
 
+
 def test_create_expense_helper_returns_int_id(client):
     from database.db import create_expense
 
@@ -301,9 +312,7 @@ def test_create_expense_helper_returns_int_id(client):
     assert isinstance(new_id, int)
     conn = get_db()
     try:
-        row = conn.execute(
-            "SELECT * FROM expenses WHERE id = ?", (new_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM expenses WHERE id = ?", (new_id,)).fetchone()
     finally:
         conn.close()
     assert row["user_id"] == uid
@@ -324,11 +333,3 @@ def test_create_expense_helper_blank_description_is_null(client):
     finally:
         conn.close()
     assert row["description"] is None
-
-
-# ---------------------------------------------------------------- stubs
-
-def test_delete_stub_unchanged(client):
-    response = client.get("/expenses/1/delete")
-    assert response.status_code == 200
-    assert b"coming in Step 9" in response.data
